@@ -33,7 +33,7 @@ const MobileNav = ({ user }: MobileNavProps) => {
 
         <SheetContent side="left" className='border-none bg-white'>
           <SheetTitle>
-            <Link href='/' className='flex cursor-pointer items-center gap-1 px -4'>
+            <Link href='/' className='flex cursor-pointer items-center gap-1 px-4'>
               <Image
                 src="/icons/logo.svg"
                 alt='Horizon logo'
