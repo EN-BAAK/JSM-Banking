@@ -3,7 +3,7 @@
 import { ID, Query } from "node-appwrite";
 import { createAdminClient, createSessionClient } from "../appwrite";
 import { cookies } from "next/headers";
-import { encryptId, extractCustomerIdFromUrl, parseStringify } from "../utils";
+import { encryptId, parseStringify } from "../utils";
 import {
   CountryCode,
   ProcessorTokenCreateRequest,
@@ -13,18 +13,7 @@ import {
 
 import { plaidClient } from "@/src/lib/plaid";
 import { revalidatePath } from "next/cache";
-import { addFundingSource, createDwollaCustomer } from "./dwolla.actions";
-import {
-  createBankAccountProps,
-  exchangePublicTokenProps,
-  getBankByAccountIdProps,
-  getBankProps,
-  getBanksProps,
-  getUserInfoProps,
-  signInProps,
-  SignUpParams,
-  User,
-} from "@/src/types";
+// import { addFundingSource, createDwollaCustomer } from "./dwolla.actions";
 
 const {
   APPWRITE_DATABASE_ID: DATABASE_ID,
@@ -51,32 +40,31 @@ export const getUserInfo = async ({ userId }: getUserInfoProps) => {
 export const signIn = async ({ email, password }: signInProps) => {
   try {
     const { account } = await createAdminClient();
-    const session = await account.createEmailPasswordSession(email, password);
+    const response = await account.createEmailPasswordSession(email, password);
 
-    (await cookies()).set("appwrite-session", session.secret, {
-      path: "/",
-      httpOnly: true,
-      sameSite: "strict",
-      secure: true,
-    });
+    // (await cookies()).set("appwrite-session", session.secret, {
+    //   path: "/",
+    //   httpOnly: true,
+    //   sameSite: "strict",
+    //   secure: true,
+    // });
 
-    const user = await getUserInfo({ userId: session.userId });
-
-    return parseStringify(user);
+    // const user = await getUserInfo({ userId: session.userId });
+    return parseStringify(response);
   } catch (error) {
     console.error("Error", error);
   }
 };
 
-export const signUp = async ({ password, ...userData }: SignUpParams) => {
-  const { email, firstName, lastName } = userData;
+export const signUp = async (userData: SignUpParams) => {
+  const { email, firstName, lastName, password } = userData;
 
-  let newUserAccount;
+  // let newUserAccount;
 
   try {
-    const { account, database } = await createAdminClient();
+    const { account } = await createAdminClient();
 
-    newUserAccount = await account.create(
+    const newUserAccount = await account.create(
       ID.unique(),
       email,
       password,
@@ -85,52 +73,63 @@ export const signUp = async ({ password, ...userData }: SignUpParams) => {
 
     if (!newUserAccount) throw new Error("Error creating user");
 
-    const dwollaCustomerUrl = await createDwollaCustomer({
-      ...userData,
-      type: "personal",
-    });
+    // const dwollaCustomerUrl = await createDwollaCustomer({
+    //   ...userData,
+    //   type: "personal",
+    // });
 
-    if (!dwollaCustomerUrl) throw new Error("Error creating Dwolla customer");
+    // if (!dwollaCustomerUrl) throw new Error("Error creating Dwolla customer");
 
-    const dwollaCustomerId = extractCustomerIdFromUrl(dwollaCustomerUrl);
+    // const dwollaCustomerId = extractCustomerIdFromUrl(dwollaCustomerUrl);
 
-    const newUser = await database.createDocument(
-      DATABASE_ID!,
-      USER_COLLECTION_ID!,
-      ID.unique(),
-      {
-        ...userData,
-        userId: newUserAccount.$id,
-        dwollaCustomerId,
-        dwollaCustomerUrl,
-      }
-    );
+    // const newUser = await database.createDocument(
+    //   DATABASE_ID!,
+    //   USER_COLLECTION_ID!,
+    //   ID.unique(),
+    //   {
+    //     ...userData,
+    //     userId: newUserAccount.$id,
+    //     // dwollaCustomerId,
+    //     // dwollaCustomerUrl,
+    //   }
+    // );
 
     const session = await account.createEmailPasswordSession(email, password);
 
     (await cookies()).set("appwrite-session", session.secret, {
       path: "/",
+      //+ Specifies the path where the cookie is valid.
+      //+ "/" means the cookie will be available on all pages of the website (root and beyond).
       httpOnly: true,
+      //+ Makes the cookie HTTP-only.
+      //+ This means it cannot be accessed or modified using JavaScript (e.g., document.cookie).
+      //+ Benefit: Protects against attacks like XSS (Cross-Site Scripting).
       sameSite: "strict",
+      //+ Restricts the cookie from being sent with cross-site requests.
+      //+ "strict" means the cookie will only be sent if the request originates from the same site.
+      //+ Benefit: Protects against CSRF (Cross-Site Request Forgery) attacks.
       secure: true,
+      //+ Ensures the cookie is only sent over secure HTTPS connections.
+      //+ Benefit: Protects sensitive data during transmission.
     });
 
-    return parseStringify(newUser);
+    return parseStringify(newUserAccount);
   } catch (error) {
     console.error("Error", error);
+  } finally {
+    console.log("End");
   }
 };
 
 export async function getLoggedInUser() {
   try {
     const { account } = await createSessionClient();
-    const result = await account.get();
+    // const result = await account.get();
 
-    const user = await getUserInfo({ userId: result.$id });
+    const user = await account.get();
 
     return parseStringify(user);
-  } catch (error) {
-    console.log(error);
+  } catch {
     return null;
   }
 }

@@ -1,5 +1,7 @@
 /* eslint-disable no-unused-vars */
 
+import { Control, Path } from "react-hook-form";
+
 declare type SearchParamProps = {
   params: { [key: string]: string };
   searchParams: { [key: string]: string | string[] | undefined };
@@ -178,6 +180,15 @@ declare interface PlaidLinkProps {
   variant?: "primary" | "ghost";
   dwollaCustomerId?: string;
 }
+
+// declare type User = sdk.Models.Document & {
+//   accountId: string;
+//   email: string;
+//   name: string;
+//   items: string[];
+//   accessToken: string;
+//   image: string;
+// };
 
 declare interface AuthFormProps {
   type: "sign-in" | "sign-up";

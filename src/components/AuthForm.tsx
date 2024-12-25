@@ -13,7 +13,7 @@ import {
 import CustomInput from './CustomInput'
 import { Loader2 } from 'lucide-react'
 import { authFormSchema } from '../lib/utils'
-import { signIn } from '../lib/actions/user.actions'
+import { signIn, signUp } from '../lib/actions/user.actions'
 import { useRouter } from 'next/navigation'
 
 
@@ -22,7 +22,7 @@ interface Props {
 }
 
 const AuthForm = ({ type }: Props) => {
-  const user = useState<string | null>(null)[0]
+  const [user, setUser] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState<boolean>(false)
 
   const formSchema = authFormSchema(type)
@@ -49,7 +49,8 @@ const AuthForm = ({ type }: Props) => {
 
     try {
       if (type === "sign-up") {
-        // const newUser = await signUp
+        const newUser = await signUp(data)
+        setUser(newUser)
       }
       if (type === "sign-in") {
         const response = await signIn({

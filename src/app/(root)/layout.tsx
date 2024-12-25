@@ -1,28 +1,18 @@
 import MobileNav from "@/src/components/MobileNav";
 import Sidebar from "@/src/components/Sidebar";
+import { getLoggedInUser } from "@/src/lib/actions/user.actions";
 import Image from "next/image";
+import { redirect } from "next/navigation"; // we use it because ewe can't use 'useRouter' why? because it's not a client side
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const loggedIn = {
-    $id: "string",
-    email: "string",
-    userId: "string",
-    dwollaCustomerUrl: "string",
-    dwollaCustomerId: "string",
-    firstName: "string",
-    lastName: "String",
-    name: "String",
-    address1: "String",
-    city: "String",
-    state: "String",
-    postalCode: "String",
-    dateOfBirth: "String",
-    ssn: "String",
-  }
+  const loggedIn = await getLoggedInUser()
+
+  if (!loggedIn)
+    redirect("/sign-in")
 
   return (
     <main className="flex h-screen w-full font-inter">

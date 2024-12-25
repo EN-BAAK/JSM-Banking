@@ -6,7 +6,6 @@ import {
   FormMessage,
 } from '@/src/components/ui/form';
 import { Input } from '@/src/components/ui/input';
-import { CustomInputProps } from '../types';
 import { FieldValues } from 'react-hook-form';
 
 
