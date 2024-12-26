@@ -3,7 +3,7 @@
 import { ID, Query } from "node-appwrite";
 import { createAdminClient, createSessionClient } from "../appwrite";
 import { cookies } from "next/headers";
-import { encryptId, parseStringify } from "../utils";
+import { encryptId, extractCustomerIdFromUrl, parseStringify } from "../utils";
 import {
   CountryCode,
   ProcessorTokenCreateRequest,
@@ -13,12 +13,12 @@ import {
 
 import { plaidClient } from "@/src/lib/plaid";
 import { revalidatePath } from "next/cache";
-// import { addFundingSource, createDwollaCustomer } from "./dwolla.actions";
+import { addFundingSource, createDwollaCustomer } from "./dwolla.actions";
 
 const {
-  APPWRITE_DATABASE_ID: DATABASE_ID,
-  APPWRITE_USER_COLLECTION_ID: USER_COLLECTION_ID,
-  APPWRITE_BANK_COLLECTION_ID: BANK_COLLECTION_ID,
+  NEXT_PUBLIC_APPWRITE_DATABASE_ID: DATABASE_ID,
+  NEXT_PUBLIC_APPWRITE_USER_COLLECTION_ID: USER_COLLECTION_ID,
+  NEXT_PUBLIC_APPWRITE_BANK_COLLECTION_ID: BANK_COLLECTION_ID,
 } = process.env;
 
 export const getUserInfo = async ({ userId }: getUserInfoProps) => {
@@ -56,15 +56,18 @@ export const signIn = async ({ email, password }: signInProps) => {
   }
 };
 
-export const signUp = async (userData: SignUpParams) => {
-  const { email, firstName, lastName, password } = userData;
+export const signUp = async ({ password, ...userData }: SignUpParams) => {
+  const { email, firstName, lastName } = userData;
 
-  // let newUserAccount;
+  let newUserAccount;
+
+  if (!DATABASE_ID || !USER_COLLECTION_ID)
+    throw new Error("We have a missing data");
 
   try {
-    const { account } = await createAdminClient();
+    const { account, database } = await createAdminClient();
 
-    const newUserAccount = await account.create(
+    newUserAccount = await account.create(
       ID.unique(),
       email,
       password,
@@ -73,26 +76,26 @@ export const signUp = async (userData: SignUpParams) => {
 
     if (!newUserAccount) throw new Error("Error creating user");
 
-    // const dwollaCustomerUrl = await createDwollaCustomer({
-    //   ...userData,
-    //   type: "personal",
-    // });
+    const dwollaCustomerUrl = await createDwollaCustomer({
+      ...userData,
+      type: "personal",
+    });
 
-    // if (!dwollaCustomerUrl) throw new Error("Error creating Dwolla customer");
+    if (!dwollaCustomerUrl) throw new Error("Error creating Dwolla customer");
 
-    // const dwollaCustomerId = extractCustomerIdFromUrl(dwollaCustomerUrl);
+    const dwollaCustomerId = extractCustomerIdFromUrl(dwollaCustomerUrl);
 
-    // const newUser = await database.createDocument(
-    //   DATABASE_ID!,
-    //   USER_COLLECTION_ID!,
-    //   ID.unique(),
-    //   {
-    //     ...userData,
-    //     userId: newUserAccount.$id,
-    //     // dwollaCustomerId,
-    //     // dwollaCustomerUrl,
-    //   }
-    // );
+    const newUser = await database.createDocument(
+      DATABASE_ID!,
+      USER_COLLECTION_ID!,
+      ID.unique(),
+      {
+        ...userData,
+        userId: newUserAccount.$id,
+        dwollaCustomerId,
+        dwollaCustomerUrl,
+      }
+    );
 
     const session = await account.createEmailPasswordSession(email, password);
 
@@ -113,7 +116,7 @@ export const signUp = async (userData: SignUpParams) => {
       //+ Benefit: Protects sensitive data during transmission.
     });
 
-    return parseStringify(newUserAccount);
+    return parseStringify(newUser);
   } catch (error) {
     console.error("Error", error);
   } finally {
