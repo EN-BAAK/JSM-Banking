@@ -187,6 +187,7 @@ declare interface BankDropdownProps<T> {
   accounts: Account[];
   setValue?: UseFormSetValue<T>;
   otherStyles?: string;
+  type?: string
 }
 
 declare interface BankTabItemProps {
