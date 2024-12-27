@@ -18,7 +18,7 @@ import { addFundingSource, createDwollaCustomer } from "./dwolla.actions";
 const {
   NEXT_PUBLIC_APPWRITE_DATABASE_ID: DATABASE_ID,
   NEXT_PUBLIC_APPWRITE_USER_COLLECTION_ID: USER_COLLECTION_ID,
-  NEXT_PUBLIC_APPWRITE_BANK_COLLECTION_ID: BANK_COLLECTION_ID,
+  NEXT_PUBLIC_APPWRITE_BANKS_COLLECTION_ID: BANK_COLLECTION_ID,
 } = process.env;
 
 export const getUserInfo = async ({ userId }: getUserInfoProps) => {
@@ -40,17 +40,18 @@ export const getUserInfo = async ({ userId }: getUserInfoProps) => {
 export const signIn = async ({ email, password }: signInProps) => {
   try {
     const { account } = await createAdminClient();
-    const response = await account.createEmailPasswordSession(email, password);
+    const session = await account.createEmailPasswordSession(email, password);
 
-    // (await cookies()).set("appwrite-session", session.secret, {
-    //   path: "/",
-    //   httpOnly: true,
-    //   sameSite: "strict",
-    //   secure: true,
-    // });
+    (await cookies()).set("appwrite-session", session.secret, {
+      path: "/",
+      httpOnly: true,
+      sameSite: "strict",
+      secure: true,
+    });
 
-    // const user = await getUserInfo({ userId: session.userId });
-    return parseStringify(response);
+    const user = await getUserInfo({ userId: session.userId });
+
+    return parseStringify(user);
   } catch (error) {
     console.error("Error", error);
   }
@@ -127,12 +128,13 @@ export const signUp = async ({ password, ...userData }: SignUpParams) => {
 export async function getLoggedInUser() {
   try {
     const { account } = await createSessionClient();
-    // const result = await account.get();
+    const result = await account.get();
 
-    const user = await account.get();
+    const user = await getUserInfo({ userId: result.$id });
 
     return parseStringify(user);
-  } catch {
+  } catch (error) {
+    console.log(error);
     return null;
   }
 }
@@ -144,7 +146,8 @@ export const logoutAccount = async () => {
     (await cookies()).delete("appwrite-session");
 
     await account.deleteSession("current");
-  } catch {
+  } catch (error) {
+    console.log(error);
     return null;
   }
 };
